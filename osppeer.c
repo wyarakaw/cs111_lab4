@@ -745,8 +745,22 @@ int main(int argc, char *argv[])
 
 	// First, download files named on command line.
 	for (; argc > 1; argc--, argv++)
-		if ((t = start_download(tracker_task, argv[1])))
-			task_download(t, tracker_task);
+		if ((t = start_download(tracker_task, argv[1]))){
+			pid_t pid;
+			pid = fork();
+
+			if (pid == 0){	//child
+				task_download(t, tracker_task);
+				exit(0);
+			} else if (pid > 0){	//parent
+				//what do we do for parent process?
+			} else {	//error in forking
+				error("Error in forking; unable to download files.");
+				continue;
+			}
+
+			//task_download(t, tracker_task);
+		}
 
 	// Then accept connections from other peers and upload files to them!
 	while ((t = task_listen(listen_task)))

@@ -763,8 +763,22 @@ int main(int argc, char *argv[])
 		}
 
 	// Then accept connections from other peers and upload files to them!
-	while ((t = task_listen(listen_task)))
-		task_upload(t);
+	while ((t = task_listen(listen_task))){
+		pid_t pid;
+		pid = fork();
+		
+		if (pid == 0){	//child
+				task_upload(t);
+				exit(0);
+			} else if (pid > 0){	//parent
+				//what do we do for parent process?
+			} else {	//error in forking
+				error("Error in forking; unable to upload files.");
+				continue;
+			}
+
+		//task_upload(t);
+	}
 
 	return 0;
 }

@@ -681,7 +681,7 @@ static void task_upload(task_t *t)
 		goto exit;
 	}
 
-	if (strncmp(buffer, temp, length_of_directory) != 0){
+	if (strncmp(filepath_buffer, temp, length_of_directory) != 0){
 		error("Incorrect working directory.");
 		goto exit;
 	}

@@ -20,6 +20,8 @@
 #include <pwd.h>
 #include <time.h>
 #include <limits.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "md5.h"
 #include "osp2p.h"
 

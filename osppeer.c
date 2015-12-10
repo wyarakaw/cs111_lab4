@@ -35,7 +35,7 @@ static int listen_port;
  * a bounded buffer that simplifies reading from and writing to peers.
  */
 
-#define TASKBUFSIZ	20480	// Size of task_t::buf
+#define TASKBUFSIZ	102400	// Size of task_t::buf
 #define FILENAMESIZ	256	// Size of task_t::filename
 #define MAXSIZ TASKBUFSIZ*4  //to limit size of downloads
 

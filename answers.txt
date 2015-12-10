@@ -28,8 +28,17 @@ We used forking inside int main() in order to download and upload in parallel.
 
 # EXERCISE 2A: What conditions did you find and fix that would have
 #    triggered a buffer overrun bug?  (~1-3 sentences each)
+strcpy seemed to have been causing a buffer overrun bug in start_download and
+task_download. We used strncpy instead, and used FILENAMESIZ to give a max
+size for copying.
 
 # EXERCISE 2B: What other robustness problems did you fix?  (~1-3 sentences
 #    each)
+
+1. Put a cap on the maximum size of download files with a #define variable MAXSIZ,
+and set it equal to four times the TASKBUFSIZ.
+
+2. Increased the number of tasks we could run be increasing TASKBUFSIZ to five times
+as much.
 
 # Add any other information you'd like us to know below this line.

@@ -659,15 +659,13 @@ static void task_upload(task_t *t)
 	int MAXPATHSIZE = 1024;
 	char filepath_buffer[MAXPATHSIZE];
 	int length_of_directory = 0;
-
 	char temp[MAXPATHSIZE];
-	char *buffer = filepath_buffer;
 
 	/* getcwd(char *buf, unsigned long size) returns -1 on failure (for example, if the 
 	current directory is not readable), with errno set accordingly, and the number of 
 	characters stored in buf on success. The contents of the array pointed to by buf is 
 	undefined on error.  */
-	if (getcwd(buffer, MAXPATHSIZE) == -1){
+	if (getcwd(filepath_buffer, MAXPATHSIZE) == -1){
 		error("Cannot obtain current directory.");
 		goto exit;
 	} else {

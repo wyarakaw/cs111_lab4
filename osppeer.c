@@ -655,6 +655,39 @@ static void task_upload(task_t *t)
 	}
 	t->head = t->tail = 0;
 
+	// Checking for correct filepath
+	int MAXPATHSIZE = 1024;
+	char filepath_buffer[MAXPATHSIZE];
+	int length_of_directory = 0;
+
+	char temp[MAXPATHSIZE];
+	char *buffer = filepath_buffer;
+
+	/* getcwd(char *buf, unsigned long size) returns -1 on failure (for example, if the 
+	current directory is not readable), with errno set accordingly, and the number of 
+	characters stored in buf on success. The contents of the array pointed to by buf is 
+	undefined on error.  */
+	if (getcwd(buffer, MAXPATHSIZE) == -1){
+		error("Cannot obtain current directory.");
+		goto exit;
+	} else {
+		length_of_directory = strlen(buffer);
+	}
+
+	/* Upon successful completion, realpath() shall return a pointer to the resolved 
+	name. Otherwise, realpath() shall return a null pointer and set errno to indicate 
+	the error, and the contents of the buffer pointed to by resolved_name are 
+	undefined.  */
+	if (!realpath(t->filename, temp)){
+		error("Cannot obtain full filepath for file.");
+		goto exit;
+	}
+
+	if (strncmp(buffer, temp, length_of_directory) != 0){
+		error("Incorrect working directory.");
+		goto exit;
+	}
+
 	t->disk_fd = open(t->filename, O_RDONLY);
 	if (t->disk_fd == -1) {
 		error("* Cannot open file %s", t->filename);

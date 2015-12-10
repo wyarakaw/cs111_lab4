@@ -637,6 +637,12 @@ static task_t *task_listen(task_t *listen_task)
 static void task_upload(task_t *t)
 {
 	assert(t->type == TASK_UPLOAD);
+
+	int MAXPATHSIZE = 1024;
+	char filepath_buffer[MAXPATHSIZE];
+	int length_of_directory = 0;
+	char temp[MAXPATHSIZE];
+
 	// First, read the request from the peer.
 	while (1) {
 		int ret = read_to_taskbuf(t->peer_fd, t);
@@ -656,11 +662,7 @@ static void task_upload(task_t *t)
 	t->head = t->tail = 0;
 
 	// Checking for correct filepath
-	int MAXPATHSIZE = 1024;
-	char filepath_buffer[MAXPATHSIZE];
-	int length_of_directory = 0;
-	char temp[MAXPATHSIZE];
-
+	
 	/* getcwd(char *buf, unsigned long size) returns -1 on failure (for example, if the 
 	current directory is not readable), with errno set accordingly, and the number of 
 	characters stored in buf on success. The contents of the array pointed to by buf is 

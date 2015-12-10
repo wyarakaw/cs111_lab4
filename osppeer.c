@@ -33,7 +33,7 @@ static int listen_port;
  * a bounded buffer that simplifies reading from and writing to peers.
  */
 
-#define TASKBUFSIZ	4096	// Size of task_t::buf
+#define TASKBUFSIZ	20480	// Size of task_t::buf
 #define FILENAMESIZ	256	// Size of task_t::filename
 
 typedef enum tasktype {		// Which type of connection is this?
@@ -474,7 +474,7 @@ task_t *start_download(task_t *tracker_task, const char *filename)
 		error("* Error while allocating task");
 		goto exit;
 	}
-	strcpy(t->filename, filename);
+	strncpy(t->filename, filename, FILENAMESIZ);
 
 	// add peers
 	s1 = tracker_task->buf;
@@ -531,7 +531,7 @@ static void task_download(task_t *t, task_t *tracker_task)
 	// at all.
 	for (i = 0; i < 50; i++) {
 		if (i == 0)
-			strcpy(t->disk_filename, t->filename);
+			strncpy(t->disk_filename, t->filename, FILENAMESIZ);
 		else
 			sprintf(t->disk_filename, "%s~%d~", t->filename, i);
 		t->disk_fd = open(t->disk_filename,
@@ -743,6 +743,8 @@ int main(int argc, char *argv[])
 	listen_task = start_listen();
 	register_files(tracker_task, myalias);
 
+	//to keep track of number of children
+	int children = 0;
 	// First, download files named on command line.
 	for (; argc > 1; argc--, argv++)
 		if ((t = start_download(tracker_task, argv[1]))){
@@ -753,7 +755,8 @@ int main(int argc, char *argv[])
 				task_download(t, tracker_task);
 				exit(0);
 			} else if (pid > 0){	//parent
-				//what do we do for parent process?
+				children++;
+				task_free(t);
 			} else {	//error in forking
 				error("Error in forking; unable to download files.");
 				continue;
@@ -762,16 +765,23 @@ int main(int argc, char *argv[])
 			//task_download(t, tracker_task);
 		}
 
+	if (children > 0){
+		while (children-- > 0){
+			waitpid(-1, NULL, 0);
+		}
+	}
+
 	// Then accept connections from other peers and upload files to them!
 	while ((t = task_listen(listen_task))){
 		pid_t pid;
+		waitpid(-1, NULL, WNOHANG);
 		pid = fork();
 		
 		if (pid == 0){	//child
 				task_upload(t);
 				exit(0);
 			} else if (pid > 0){	//parent
-				//what do we do for parent process?
+				task_free(t);
 			} else {	//error in forking
 				error("Error in forking; unable to upload files.");
 				continue;

@@ -665,11 +665,11 @@ static void task_upload(task_t *t)
 	current directory is not readable), with errno set accordingly, and the number of 
 	characters stored in buf on success. The contents of the array pointed to by buf is 
 	undefined on error.  */
-	if (getcwd(filepath_buffer, MAXPATHSIZE) == -1){
+	if (!getcwd(filepath_buffer, MAXPATHSIZE)){
 		error("Cannot obtain current directory.");
 		goto exit;
 	} else {
-		length_of_directory = strlen(buffer);
+		length_of_directory = strlen(filepath_buffer);
 	}
 
 	/* Upon successful completion, realpath() shall return a pointer to the resolved 

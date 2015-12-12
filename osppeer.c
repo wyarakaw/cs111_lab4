@@ -728,7 +728,6 @@ int main(int argc, char *argv[])
 	char *s;
 	const char *myalias;
 	struct passwd *pwent;
-	pid_t pid;
 
 	osp2p_sscanf("164.67.100.231:12997", "%I:%d",
 		     &tracker_addr, &tracker_port);
@@ -787,6 +786,7 @@ int main(int argc, char *argv[])
 	// First, download files named on command line.
 	for (; argc > 1; argc--, argv++){
 		if ((t = start_download(tracker_task, argv[1]))){
+			pid_t pid;
 			pid = fork();
 
 			if (pid == 0){	//child process
@@ -805,7 +805,9 @@ int main(int argc, char *argv[])
 
 	// Then accept connections from other peers and upload files to them!
 	while ((t = task_listen(listen_task))){
+		pid_t pid;
 		pid = fork();
+		waipid(-1, NULL, WNOHANG);
 
 		if (pid == 0){	//child process
 			task_upload(t);

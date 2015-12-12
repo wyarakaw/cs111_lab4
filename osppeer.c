@@ -792,9 +792,11 @@ int main(int argc, char *argv[])
 			if (pid == 0){	//child process
 				task_download(t, tracker_task);
 				exit(0);
-			} else if (pid < 0){
+			} else if (pid < 0){	//error
 				error("Unable to fork for child process (download).");
 				continue;
+			} else if (pid > 0){	//parent
+				task_free(t);
 			}
 
 			//task_download(t, tracker_task);
@@ -811,6 +813,8 @@ int main(int argc, char *argv[])
 		} else if (pid < 0){
 			error("Unable to fork for child process (upload).");
 			continue;
+		} else if (pid > 0){	//parent
+			task_free(t);
 		}
 		//task_upload(t);
 	}

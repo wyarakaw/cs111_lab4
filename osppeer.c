@@ -783,6 +783,8 @@ int main(int argc, char *argv[])
 	listen_task = start_listen();
 	register_files(tracker_task, myalias);
 
+	int children = 0;
+
 	// First, download files named on command line.
 	for (; argc > 1; argc--, argv++){
 		if ((t = start_download(tracker_task, argv[1]))){
@@ -795,7 +797,8 @@ int main(int argc, char *argv[])
 			} else if (pid < 0){	//error
 				error("Unable to fork for child process (download).");
 				continue;
-			} else if (pid > 0){	//parent
+			} else if (pid > 0){	//
+				children++;
 				task_free(t);
 			}
 
@@ -803,11 +806,15 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	while (children-- > 0){
+		waitpid(-1, NULL, 0);
+	}
+
 	// Then accept connections from other peers and upload files to them!
 	while ((t = task_listen(listen_task))){
 		pid_t pid;
 		pid = fork();
-		waipid(-1, NULL, WNOHANG);
+		waitpid(-1, NULL, WNOHANG);
 
 		if (pid == 0){	//child process
 			task_upload(t);

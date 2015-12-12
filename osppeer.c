@@ -20,6 +20,8 @@
 #include <pwd.h>
 #include <time.h>
 #include <limits.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "md5.h"
 #include "osp2p.h"
 
@@ -33,8 +35,9 @@ static int listen_port;
  * a bounded buffer that simplifies reading from and writing to peers.
  */
 
-#define TASKBUFSIZ	4096	// Size of task_t::buf
+#define TASKBUFSIZ	51200	// Size of task_t::buf
 #define FILENAMESIZ	256	// Size of task_t::filename
+#define MAXSIZ TASKBUFSIZ*4  //to limit size of downloads
 
 typedef enum tasktype {		// Which type of connection is this?
 	TASK_TRACKER,		// => Tracker connection
@@ -474,7 +477,7 @@ task_t *start_download(task_t *tracker_task, const char *filename)
 		error("* Error while allocating task");
 		goto exit;
 	}
-	strcpy(t->filename, filename);
+	strncpy(t->filename, filename, FILENAMESIZ);
 
 	// add peers
 	s1 = tracker_task->buf;
@@ -531,7 +534,7 @@ static void task_download(task_t *t, task_t *tracker_task)
 	// at all.
 	for (i = 0; i < 50; i++) {
 		if (i == 0)
-			strcpy(t->disk_filename, t->filename);
+			strncpy(t->disk_filename, t->filename, FILENAMESIZ);
 		else
 			sprintf(t->disk_filename, "%s~%d~", t->filename, i);
 		t->disk_fd = open(t->disk_filename,
@@ -565,6 +568,11 @@ static void task_download(task_t *t, task_t *tracker_task)
 		ret = write_from_taskbuf(t->disk_fd, t);
 		if (ret == TBUF_ERROR) {
 			error("* Disk write error");
+			goto try_again;
+		}
+
+		if (t->total_written > MAXSIZ){
+			error(" * File size too big error");
 			goto try_again;
 		}
 	}
@@ -629,6 +637,12 @@ static task_t *task_listen(task_t *listen_task)
 static void task_upload(task_t *t)
 {
 	assert(t->type == TASK_UPLOAD);
+
+	int MAXPATHSIZE = 1024;
+	char filepath_buffer[MAXPATHSIZE];
+	int length_of_directory = 0;
+	char temp[MAXPATHSIZE];
+
 	// First, read the request from the peer.
 	while (1) {
 		int ret = read_to_taskbuf(t->peer_fd, t);
@@ -646,6 +660,33 @@ static void task_upload(task_t *t)
 		goto exit;
 	}
 	t->head = t->tail = 0;
+
+	// Checking for correct filepath
+	
+	/* getcwd(char *buf, unsigned long size) returns -1 on failure (for example, if the 
+	current directory is not readable), with errno set accordingly, and the number of 
+	characters stored in buf on success. The contents of the array pointed to by buf is 
+	undefined on error.  */
+	if (!getcwd(filepath_buffer, MAXPATHSIZE)){
+		error("Cannot obtain current directory.");
+		goto exit;
+	} else {
+		length_of_directory = strlen(filepath_buffer);
+	}
+
+	/* Upon successful completion, realpath() shall return a pointer to the resolved 
+	name. Otherwise, realpath() shall return a null pointer and set errno to indicate 
+	the error, and the contents of the buffer pointed to by resolved_name are 
+	undefined.  */
+	if (!realpath(t->filename, temp)){
+		error("Cannot obtain full filepath for file.");
+		goto exit;
+	}
+
+	if (strncmp(filepath_buffer, temp, length_of_directory) != 0){
+		error("Incorrect working directory.");
+		goto exit;
+	}
 
 	t->disk_fd = open(t->filename, O_RDONLY);
 	if (t->disk_fd == -1) {
@@ -676,7 +717,6 @@ static void task_upload(task_t *t)
     exit:
 	task_free(t);
 }
-
 
 // main(argc, argv)
 //	The main loop!

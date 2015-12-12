@@ -785,7 +785,7 @@ int main(int argc, char *argv[])
 	register_files(tracker_task, myalias);
 
 	//to keep track of number of children
-	int children = 0;
+	//int children = 0;
 	// First, download files named on command line.
 	for (; argc > 1; argc--, argv++)
 		if ((t = start_download(tracker_task, argv[1]))){
@@ -796,8 +796,8 @@ int main(int argc, char *argv[])
 				task_download(t, tracker_task);
 				exit(0);
 			} else if (pid > 0){	//parent
-				children++;
-				task_free(t);
+				//children++;
+				//task_free(t);
 			} else {	//error in forking
 				error("Error in forking; unable to download files.");
 				continue;
@@ -806,11 +806,12 @@ int main(int argc, char *argv[])
 			//task_download(t, tracker_task);
 		}
 
+		/*
 	if (children > 0){
 		while (children-- > 0){
 			waitpid(-1, NULL, 0);
 		}
-	}
+	}*/
 
 	// Then accept connections from other peers and upload files to them!
 	while ((t = task_listen(listen_task))){
@@ -822,7 +823,7 @@ int main(int argc, char *argv[])
 				task_upload(t);
 				exit(0);
 			} else if (pid > 0){	//parent
-				task_free(t);
+				//task_free(t);
 			} else {	//error in forking
 				error("Error in forking; unable to upload files.");
 				continue;

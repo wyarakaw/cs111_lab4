@@ -38,7 +38,8 @@ size for copying.
 1. Put a cap on the maximum size of download files with a #define variable MAXSIZ,
 and set it equal to four times the TASKBUFSIZ.
 
-2. Increased the number of tasks we could run be increasing TASKBUFSIZ to five times
-as much.
+2. Increased the number of tasks we could run be increasing TASKBUFSIZ to 51200.
+
+3. Made sure that all the requested files were in the correct directory.
 
 # Add any other information you'd like us to know below this line.

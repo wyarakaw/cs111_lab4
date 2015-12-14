@@ -478,6 +478,7 @@ task_t *start_download(task_t *tracker_task, const char *filename)
 		goto exit;
 	}
 	strncpy(t->filename, filename, FILENAMESIZ);
+	t->filename[FILENAMESIZ-1] = '\0';
 
 	// add peers
 	s1 = tracker_task->buf;
@@ -533,8 +534,10 @@ static void task_download(task_t *t, task_t *tracker_task)
 	// "foo.txt~1~".  However, if there are 50 local files, don't download
 	// at all.
 	for (i = 0; i < 50; i++) {
-		if (i == 0)
+		if (i == 0) {
 			strncpy(t->disk_filename, t->filename, FILENAMESIZ);
+			t->disk_filename[FILENAMESIZ-1] = '\0';
+		}
 		else
 			sprintf(t->disk_filename, "%s~%d~", t->filename, i);
 		t->disk_fd = open(t->disk_filename,
@@ -661,6 +664,7 @@ static void task_upload(task_t *t)
 	}
 	t->head = t->tail = 0;
 
+
 	// Checking for correct filepath
 	
 	/* getcwd(char *buf, unsigned long size) returns -1 on failure (for example, if the 
@@ -784,8 +788,6 @@ int main(int argc, char *argv[])
 	listen_task = start_listen();
 	register_files(tracker_task, myalias);
 
-
-
 	// First, download files named on command line.
 	for (; argc > 1; argc--, argv++){
 		if ((t = start_download(tracker_task, argv[1]))){
@@ -813,10 +815,26 @@ int main(int argc, char *argv[])
 	}
 
 	// Then accept connections from other peers and upload files to them!
+	int nUploads = 0;
 	while ((t = task_listen(listen_task))){
 		pid_t pid;
-		pid = fork();
-		waitpid(-1, NULL, WNOHANG);
+
+
+		//limit number of simultaneous uploads to 15
+		if (nUploads < 15){
+			pid = fork();
+		}
+		else {
+			//if number of uploads is too great, wait for one to finish
+			while (nUploads-- > 15)
+				waitpid(-1, NULL, 0);
+
+			//now a child has exited; fork now
+			pid = fork();
+		}
+
+		if (waitpid(-1, NULL, WNOHANG) > 0)
+			nUploads--;
 
 		if (pid == 0){	//child process
 			task_upload(t);
@@ -825,11 +843,14 @@ int main(int argc, char *argv[])
 			error("Unable to fork for child process (upload).");
 			continue;
 		} else if (pid > 0){	//parent
+			nUploads++;
+			//message("number of uploads is: %d", nUploads);
 			task_free(t);
 			continue;
 		}
 		//task_upload(t);
 	}
+
 
 	return 0;
 }

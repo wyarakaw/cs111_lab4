@@ -30,16 +30,29 @@ We used forking inside int main() in order to download and upload in parallel. W
 #    triggered a buffer overrun bug?  (~1-3 sentences each)
 strcpy seemed to have been causing a buffer overrun bug in start_download and
 task_download. We used strncpy instead, and used FILENAMESIZ to give a max
-size for copying.
+size for copying. Also added a null byte at the end of the buffer, to ensure that
+the string is interpreted correctly in the case of a later read. 
 
 # EXERCISE 2B: What other robustness problems did you fix?  (~1-3 sentences
 #    each)
 
 1. Put a cap on the size of download files with a #define variable MAXSIZ,
-and set it equal to four times the TASKBUFSIZ. If a a single transaction exceeds this maximum, the download is aborted. 
+and set it equal to 1 Megabyte. If a a single transaction exceeds this maximum, the download is aborted. This is done to counter the attacks on the bad tracker that 
+attempt to transfer extremely large files.
 
-2. Increased the number of tasks we could run be increasing TASKBUFSIZ to 51200.
+2. Increased the number of tasks we could run be increasing TASKBUFSIZ to 51200.This 
+is done to counter the problem occurring on the popular tracker where the buffer
+size is not large enough to accommodate the list of peers. Increasing this buffer
+size helps us accommodate trackers with higher traffic. 
 
-3. Made sure that all the requested files were in the correct directory, by comparing the directory of the requested file with the current working directory. This was done using the C functions getcwd() and realpath(). If the directory of the requested file does not match the current working directory, the file request is not served. 
+3. Made sure that all the requested files were in the correct directory, by comparing
+the directory of the requested file with the current working directory. This was done
+using the C functions getcwd() and realpath(). If the directory of the requested file
+does not match the current working directory, the file request is not served.
+
+4. Put a limit on the number of parallel uploads that can happen simultaneously. 
+Doing so protects us from the possibility of an attacker requesting an extremely large
+amount of files at the same time - this would cause us to fork a ridiculous amount of 
+child processes that would fill up our process table and use all our resources. 
 
 # Add any other information you'd like us to know below this line.
